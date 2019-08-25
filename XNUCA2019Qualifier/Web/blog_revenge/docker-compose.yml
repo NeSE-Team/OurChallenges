@@ -1,0 +1,37 @@
+version: '3.0'
+services:
+  mysql:
+    build: ./mysql/
+    environment:
+      - MYSQL_ROOT_PASSWORD=Cy4Qndv95KKrZCT1
+  blog:
+    build: ./blog
+    environment:
+      # 设置本服务被外部访问的地址, 此地址应该跟下面 oauth2.0 服务的 REDIRECT_IP_PORT 地址相同
+      - HOST=192.168.15.166:80
+      # 设置 oauth2.0 服务器从外部访问的地址 
+      - OAUTHSERVER=192.168.15.166:8080
+      # 设置flag
+      - FLAG=flag{this_is_flag_for_you}
+
+    ports:
+      - 80:80
+    links:
+      - mysql
+    # volumes:
+    #   - ./blog/src/protected:/var/www/protected
+    #   - ./blog/src/web/:/var/www/html/  
+  oauth:
+      build: ./OAuth2.0/
+      environment:
+
+        # 在这里配置oauth2.0认证之后的回调地址,也就是blog服务的地址,注意是从外部访问的地址 
+        - REDIRECT_IP_PORT=192.168.15.166:80
+      command: bash -c "chown oauth:oauth -R /oauth  && sed -i s?__IP_AND_PORT__?$${REDIRECT_IP_PORT}?g  /oauth/config.py && python manage.py deploy product && uwsgi --ini uwsgi.ini"    
+      ports:
+        - 8080:8080
+      links:
+        - mysql
+      restart: always
+      stdin_open: true
+      tty: true

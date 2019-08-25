@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content%}
+
+
+    <div class="main">
+    </div>
+    <div class="content"> 
+        <div class="form">
+                <form method="post" class="layui-form layui-form-pane" action="">
+                    {% for message in get_flashed_messages() %}
+                        <script>
+                            // alert("{{ message }}");
+                            layui.use(['layer'],function(){
+                                var layer = layui.layer;
+                                layer.msg('{{ message }}')
+                            });
+                        </script>
+                    {% endfor %}
+                        
+                    <h1>{{ name }}</h1>
+                    <br/><br/>
+                    {{ form.hidden_tag() }}
+                        <div class="layui-form-item">
+                                <!-- <label class="layui-form-label">邮箱</label> -->
+                                {{ form.email.label(class="layui-form-label") }}
+                                <div class="layui-input-block">
+                                    {{ form.email(required=True,autocomplete="off",placeholder="请输入邮箱",class="layui-input")}}
+                                </div>
+                        </div>
+                        <div class="layui-form-item">
+                                {{ form.password.label(class="layui-form-label") }}
+                                <div class="layui-input-block">
+                                    <!-- <input type="password" name="title" autocomplete="off" placeholder="请输入密码" class="layui-input"> -->
+                                    {{ form.password(required=True,autocomplete="off",placeholder="请输入密码",class="layui-input")}}
+                                </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="">
+                            {{ form.submit(class="layui-btn layui-btn-fluid ")}}
+                            </div>
+                        </div>
+                        <div class="register-btn">
+                             <a href="{{ url_for('main.register') }}">没有账号?现在注册</a>
+                        </div>
+                    </form>
+        </div>
+            
+
+    </div>
+
+
+{% endblock %}

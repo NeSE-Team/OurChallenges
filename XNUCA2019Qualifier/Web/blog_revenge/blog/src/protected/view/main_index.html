@@ -1,0 +1,34 @@
+<div class="navbar navbar-inverse navbar-fixed-top">
+	<div class="navbar-inner">
+	  <div class="container-fluid">
+		<button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+		  <span class="icon-bar"></span>
+		  <span class="icon-bar"></span>
+		  <span class="icon-bar"></span>
+		</button>
+		<a class="brand" href="#">blog</a>
+		<div class="nav-collapse collapse">
+		  <p class="navbar-text pull-right">
+			<{ if $show }>
+				<a href="http://<{ $oauthserver }>/oauth?client_id=3f66bf84f42fec8fd6348593ab74db04&redirect_uri=http%3A%2f%2f<{ $host }>%2fmain%2foauth%2f&scope=user&response_type=code" class="navbar-link">绑定第三方账号</a>
+			<{/if}>
+			
+			<a href="<{url c="main" a="LoginOut"}>" class="navbar-link">Loginout</a>
+		  </p>
+		  <ul class="nav">
+				<li class="active"><a href="<{url c="main" a="index" }>">Home</a></li>
+				<li><a href="<{url c="main" a="post"}>">post_bug</a></li>
+				<li><a href="<{url c="main" a="note"}>">note</a></li>
+		  </ul>
+		</div><!--/.nav-collapse -->
+	  </div>
+	</div>
+</div>
+<div class="content">
+<div class="jumbotron">
+  <h3>welcome: <{$username}>!</h3>
+  <p>如果你绑定了第三方账号，下面会显示妳的邮件地址和uuid,如果没有绑定，你可以选择绑定!</p>
+  <p>email: <{ $email }></p>
+  <p>uuid: <{ $uuid }></p>
+</div>
+</div>

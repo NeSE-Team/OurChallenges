@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content%}
+
+    
+    <div class="main">
+    </div>
+    <div class="content"> 
+        <div class="form">
+                <form method="post" class="layui-form layui-form-pane" action="">
+                    
+                    
+                    {% for message in get_flashed_messages() %}
+                    <script>
+                        // alert("{{ message }}");
+                        layui.use(['layer'],function(){
+                            var layer = layui.layer;
+                            layer.msg('{{ message }}')
+                        });
+                    </script>
+                    {% endfor %}
+                    
+                    <h1>注册</h1>
+                    <br/><br/>
+                    {{ form.hidden_tag() }}
+                        <div class="layui-form-item">
+                                <!-- <label class="layui-form-label">邮箱</label> -->
+                                {% if form.email.errors %}
+                                {% for error in form.email.errors %}
+                                <script>
+                                layui.use(['layer'],function(){
+                                    var layer = layui.layer;
+                                        layer.tips('{{error}}', '#email');
+                                    });
+                                </script>
+                                {% endfor %}
+                            {% endif %}
+
+                                {{ form.email.label(class="layui-form-label") }}
+                                <div class="layui-input-block">
+                                    {{ form.email(required=True,autocomplete="off",placeholder="请输入邮箱",class="layui-input")}}
+                                </div>
+                        </div>
+                        <div class="layui-form-item">
+
+                                
+                            {% if form.nickname.errors %}
+                                {% for error in form.nickname.errors %}
+                                <script>
+                                layui.use(['layer'],function(){
+                                    var layer = layui.layer;
+                                        layer.tips('{{error}}', '#nickname');
+                                    });
+                                </script>
+                                {% endfor %}
+                            {% endif %}
+                                <!-- <label class="layui-form-label">邮箱</label> -->
+                                {{ form.nickname.label(class="layui-form-label") }}
+                                <div class="layui-input-block">
+                                    {{ form.nickname(required=True,autocomplete="off",placeholder="请输入昵称",class="layui-input")}}
+                                </div>
+                        </div>
+                        <div class="layui-form-item">
+                                {{ form.password1.label(class="layui-form-label") }}
+                                <div class="layui-input-block">
+                                    <!-- <input type="password" name="title" autocomplete="off" placeholder="请输入密码" class="layui-input"> -->
+                                    {{ form.password1(required=True,autocomplete="off",placeholder="请输入密码",class="layui-input")}}
+                                </div>
+                        </div>
+                        <div class="layui-form-item">
+
+                                {% if form.password2.errors %}
+                                {% for error in form.password2.errors %}
+                                <script>
+                                layui.use(['layer'],function(){
+                                    var layer = layui.layer;
+                                        layer.tips('{{error}}', '#password2');
+                                    });
+                                </script>
+                                {% endfor %}
+                                {% endif %}
+                                {{ form.password2.label(class="layui-form-label") }}
+                                <div class="layui-input-block">
+                                    <!-- <input type="password" name="title" autocomplete="off" placeholder="请输入密码" class="layui-input"> -->
+                                    {{ form.password2(required=True,autocomplete="off",placeholder="请输入密码",class="layui-input")}}
+                                </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="">
+                            {{ form.submit(class="layui-btn layui-btn-fluid ")}}
+                            </div>
+                        </div>
+                        <div class="register-btn">
+                             <a href="{{ url_for('main.login') }}">已有账号?现在登录</a>
+                        </div>
+                    </form>
+        </div>  
+    </div>
+{% endblock %}

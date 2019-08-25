@@ -1,0 +1,22 @@
+server {
+
+    listen 80;
+    server_name localhost ;
+    root /var/www/html ;
+    location / {
+        index index.php ;
+        if (!-e $request_filename){
+            rewrite (.*) /index.php;
+        }
+    }
+    location ~ \.php$ {
+      fastcgi_pass unix:/run/php/php7.2-fpm.sock  ;
+      fastcgi_index index.php ;
+      include fastcgi.conf;
+    }
+    
+    location ^~ /protected {
+        deny all;
+    }
+
+}

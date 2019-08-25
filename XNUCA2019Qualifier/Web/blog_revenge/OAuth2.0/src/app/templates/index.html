@@ -1,0 +1,18 @@
+{% extends 'index_base.html' %}
+
+{% block mainContent %}
+
+
+<div class="layui-row">
+        <div class="layui-card layui-col-md index-card ">
+                <div class="layui-card-header">nickname: {{ user.nickname }}</div>
+                <div class="layui-card-body">
+                   email: {{ user.email }}<br/>
+                   uuid: {{ user.uuid }}
+                </div>
+        </div>   
+</div>
+
+
+
+{% endblock %}

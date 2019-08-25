@@ -1,0 +1,38 @@
+<div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="navbar-inner">
+          <div class="container-fluid">
+            <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="brand" href="#">blog</a>
+            <div class="nav-collapse collapse">
+              <p class="navbar-text pull-right">
+                <a href="<{url c="main" a="LoginOut"}>" class="navbar-link">Loginout</a>
+              </p>
+              <ul class="nav">
+                    <li ><a href="<{url c="main" a="index" }>">Home</a></li>
+                    <li class="active"><a href="<{url c="main" a="post"}>">post_bug</a></li>
+                    <li><a href="<{url c="main" a="note"}>">note</a></li>
+              </ul>
+            </div><!--/.nav-collapse -->
+          </div>
+        </div>
+</div>
+
+<div class="upload">
+          <form action="<{url c="main" a="bug"}>"  method="post">
+              <div class="form-group">
+                  <label for="url">提交本网站有bug的url地址,管理员会及时查看。如果需要oauth授权，管理员会进行授权的。</label>
+                  <input id="url" type="text" class="form-control" name="url" placeholder="">
+                <button type="submit" class="btn btn-default">submit</button>
+              </div>
+          </form>
+            <p> 已经提交的bug:</p>
+            <ul>
+              <{ foreach $bugs as $bug }>
+              <li><a href="<{ $bug.bugurl }>" target="_blank"> <{ $bug.bugurl }> </a> </li>
+              <{/foreach}>
+            </ul>
+</div>

@@ -1,0 +1,1 @@
+*/1 * * * * python /tmp/robot.py >> /var/log/cron.log 2>&1
