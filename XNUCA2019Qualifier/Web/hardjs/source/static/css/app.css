@@ -1,0 +1,110 @@
+/* Write your styles */
+
+html {
+    height: 100%; 
+}
+
+body{
+    height: 100%;
+}
+.admin-content{
+	height: 1000px;
+}
+/*弹出层遮罩*/
+.layer-mask{
+	display: none;
+	z-index: 99999;
+	position: fixed;/*固定定位*/
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: #000000;
+	opacity: 0.5;/*不透明度*/
+}
+/*弹出层窗体*/
+.layer-pop{
+	display: none;
+	z-index: 100000;
+	position: fixed;
+	top: 0;/*居中显示*/
+	left: 0;
+	right: 0;
+	bottom: 0;
+	margin: auto;
+	
+	width: 400px;
+	height: 300px;
+	background: #FFFFFF;
+}
+/*弹出层关闭按钮*/
+.layer-close{
+	float: right;
+	width: 24px;
+	height: 24px;
+	border: 2px solid #FFFFFF;
+	text-align: center;
+	line-height: 25px;
+	border-radius: 50%;
+	background: #EEEEEE;
+	margin-right: -12px;
+	margin-top: -12px;
+}
+/*鼠标移动到按钮位置*/
+.layer-close:hover{
+	cursor: pointer; /*鼠标小手*/
+	background: #CCCCCC;
+	color: #FFFFFF;
+}
+
+
+/*登录*/
+.login
+{
+	text-align: center;
+	line-height: 30px;
+
+}
+.login h4
+{
+	font-size:20px;
+	line-height:50px;
+}
+
+.login label
+{
+	margin-right: 5px;
+    color: #888;
+    display: inline-block;
+    width: 60px;
+    text-align: right;
+}
+
+.login .input
+{
+	border:1px solid #ccc;
+	border-radius:3px;
+	padding:10px 5px;
+	width:250px;
+}
+
+.login .item
+{
+	margin:20px auto;
+}
+
+.login .submit
+{
+	background: #e40;
+	border:1px solid #e40;
+	border-radius:5px;
+	padding:10px 5px;
+	width:250px;
+	color:#fff;
+	float: right;
+	margin-right: 94px;
+}
+.login .error-msg
+{
+	color:#e40;
+}

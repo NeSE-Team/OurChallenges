@@ -1,0 +1,178 @@
+<!doctype html>
+<html class="no-js">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>index | StoreHtml</title>
+  <meta name="description" content="这是一个 index 页面">
+  <meta name="keywords" content="index">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-title" content="Amaze UI" />
+  <link rel="stylesheet" href="/static/css/amazeui.min.css" />
+  <link rel="stylesheet" href="/static/css/admin.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+
+<body>
+  <!--[if lte IE 9]>
+<p class="browsehappy">你正在使用<strong>过时</strong>的浏览器，Amaze UI 暂不支持。 请 <a href="http://browsehappy.com/" target="_blank">升级浏览器</a>
+  以获得更好的体验！</p>
+<![endif]-->
+
+<header class="am-topbar admin-header">
+  <div class="am-topbar-brand">
+    <strong>StoreHtml</strong> <small>页面存储</small>
+  </div>
+  
+  <div class="am-collapse am-topbar-collapse" id="topbar-collapse">
+    <ul class="am-nav am-nav-pills am-topbar-nav am-topbar-right admin-header-list">
+      <li><a href="javascript:;"><span class="am-icon-envelope-o"></span> 收件箱 <span
+            class="am-badge am-badge-warning">5</span></a></li>
+      <li class="am-dropdown" data-am-dropdown>
+        <a class="am-dropdown-toggle" data-am-dropdown-toggle href="javascript:;">
+          <span class="am-icon-users"></span> 管理员 <span class="am-icon-caret-down"></span>
+        </a>
+        <ul class="am-dropdown-content">
+          <li><a href="#"><span class="am-icon-power-off"></span> 退出</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</header>
+
+<div class="am-cf admin-main">
+  <!-- sidebar start -->
+  <div class="admin-sidebar" >
+    <ul class="am-list admin-sidebar-list">
+      <li class="admin-parent">
+        <a class="am-cf" data-am-collapse="{target: '#collapse-nav'}"><span class="am-icon-file"></span> 页面模块 <span
+            class="am-icon-angle-right am-fr am-margin-right"></span></a>
+        <ul class="am-list am-collapse admin-sidebar-sub am-in" id="collapse-nav">
+          <li type="header" class="element" >
+            <a class="am-cf" >
+              <span class="am-icon-check"></span><span class="content"></span>
+              <span class="am-icon-star am-fr am-margin-right admin-icon-yellow"></span>
+            </a>
+          </li> 
+          <li type="notice" class="element">
+            <div class="am-panel am-panel-default admin-sidebar-panel " >
+              <div class="am-panel-bd">
+                <p><span class="am-icon-bookmark"></span> 公告</p>
+                <span class="content"></span>
+              </div>
+            </div>
+          </li>
+          
+          <li type="wiki" class="element">
+              <div class="am-panel am-panel-default admin-sidebar-panel element">
+                  <div class="am-panel-bd">
+                    <p><span class="am-icon-tag"></span> wiki</p>
+                    <span class="content"></span>
+                  </div>
+              </div>
+          </li>
+
+          <li type="button" class="element">
+              <a class="am-text-success element" >
+                  <span
+                    class="am-icon-btn am-icon-file-text">
+                  </span><br/><span class="content"></span>
+                </a>
+          </li>
+
+          <li type="message" class="element">
+            <div class="am-panel am-panel-default element" >
+                  <div class="am-panel-hd am-cf" data-am-collapse="{target: '#collapse-panel-3'}">
+                    最近留言
+                    <span
+                      class="am-icon-chevron-down am-fr"></span></div>
+                  <div class="am-panel-bd am-collapse am-in am-cf" id="collapse-panel-3">
+                    <ul class="am-comments-list admin-content-comment">
+                      <li class="am-comment">
+                        <div class="am-comment-main">
+                          <header class="am-comment-hd">
+                            <div class="am-comment-meta"><a href="#" class="am-comment-author">某人</a> 评论于 <time>2019-7-12
+                                15:30</time></div>
+                          </header>
+                          <div class="am-comment-bd">
+                            <span class="content"></span>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                    <ul class="am-pagination am-fr admin-content-pagination">
+                      <li class="am-disabled"><a href="#">&laquo;</a></li>
+                      <li class="am-active"><a href="#">1</a></li>
+                      <li><a href="#">2</a></li>
+                      <li><a href="#">&raquo;</a></li>
+                    </ul>
+                  </div>
+                </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+  </div>
+  <!-- sidebar end -->
+  <div class="admin-content" id="viewer">
+  </div>
+
+</div>
+ <div class="am-g error-log">
+    <ul class="am-list am-in">
+      <li type="logger">
+          <div class="col-sm-12 col-sm-centered">
+              <pre class="am-pre-scrollable">
+                  <span class="am-text-success">[Tue Jan 11 17:32:52 9]</span> <span class="am-text-danger">[info]</span> <span class="content">StoreHtml init success .....</span>
+              </pre>
+          </div>
+      </li>
+    </ul>
+      
+</div>
+<footer>
+  <hr>
+  <p class="am-padding-left">© 2019 StoreHtml NESE.</p>
+</footer>
+
+		<!--弹出层遮罩-->
+		<div id="layer-mask" class="layer-mask"></div>
+
+		<!--弹出层窗体-->
+		<div id="layer-pop" class="layer-pop">
+			<!--弹出层关闭按钮-->
+			<div id="layer-close" class="layer-close">×</div>
+			<!--弹出层内容区域-->
+			<div id="layer-content" class="layer-content">
+
+			</div>
+		</div>
+
+		<!-- 登录窗体 -->
+		<div id="loginHtml" style="display:none;">
+			<!-- 登录窗体 -->
+			<div class="login">
+				<h4 class="title">输入自定义信息</h4>
+				<div class="item">
+					<label>内容</label>
+					<input id="info" class="input" name="info" type="text" />
+					<p class="error-msg"></p>
+				</div>
+				<div class="item">
+					<label>&nbsp;</label>
+					<input id="SubmitBtn" type="submit" class="submit" value="填写好了" />
+				</div>
+      </div>
+</div>
+
+<script src="/static/js/jquery-3.3.0.js"></script>
+<script src="/static/js/zepto.min.js"></script>
+<script src="/static/js/amazeui.min.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+
+</html>
