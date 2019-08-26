@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>message manage</title>
+</head>
+<body>
+    <h1>欢迎,{{user}}</h1>
+    <h2>你的幸运数字是：{{luky}}</h2>
+    <h2>这是root的flag: {{root_flag}}</h2>
+    <h2>这是你的flag: {{user_flag}}</h2>
+    <h3>你可以修改你flag的明文和你的幸运数字,你还有{{times}}次机会使用当前的密钥</h3>
+    <form action="/change" method="POST">
+        明文 : <input type="text" name="message" /><br>
+        幸运数字 : <input type="text" name="luky" /><br>
+        <input type="submit" value="修改" />
+    </form>
+</body>
+</html>
