@@ -1,0 +1,7 @@
+# 12 MHz clock
+set_io -nowarn clk_12        35
+
+set_io -nowarn uart          6
+
+
+set_io -nowarn uart2        11
