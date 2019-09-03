@@ -1,0 +1,6 @@
+id:000042,sig:11,src:000000,op:arith8,pos:57,val:+31
+id:000007,sig:11,src:000000,op:flip1,pos:61
+id:000064,sig:06,src:000000,op:arith16,pos:57,val:-1
+id:000004,sig:06,src:000000,op:flip1,pos:57
+r id:000076,sig:11,src:000000,op:int16,pos:58,val:+256
+r id:000203,sig:06,src:000122,op:arith16,pos:56,val:-35

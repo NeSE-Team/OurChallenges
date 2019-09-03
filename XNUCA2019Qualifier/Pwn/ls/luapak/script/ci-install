@@ -1,0 +1,22 @@
+#!/bin/sh
+# vim: set ts=4:
+#
+# This script is run on CI to prepare build environment.
+#
+# Environment variables:
+#   TARGET_ARCH : Target architecture (others than x86_64 are emulated using QEMU).
+#
+set -eu
+
+cd "$(dirname "$0")/.."
+. script/utils.sh
+
+[ "$HOST_OS" = Linux ] || exit 0
+
+einfo 'Downloading alpine-chroot-install'
+wgets 'https://raw.githubusercontent.com/alpinelinux/alpine-chroot-install/v0.6.0/alpine-chroot-install' \
+	'c081ae31075c5da20cbc2e5aaa6cfadea9d65795b6f4baedef871d7467b58593'
+
+sudo sh alpine-chroot-install \
+	-a "$TARGET_ARCH" -b v3.6 -k 'LIBC LUA_VERSION TARGET_ARCH' \
+	-p 'build-base curl file git python wget'

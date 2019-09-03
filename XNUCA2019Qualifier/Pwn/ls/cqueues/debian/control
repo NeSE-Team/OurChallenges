@@ -1,0 +1,19 @@
+Source: liblua-cqueues
+Section: unknown
+Priority: extra
+Maintainer: William Ahern <william@25thandClement.com>
+Build-Depends: debhelper (>= 9), m4, dh-lua, libssl-dev
+Standards-Version: 3.9.2
+
+Package: liblua5.1-cqueues
+Architecture: any
+Depends: openssl, liblua5.1-0
+Description: Event, socket, signal, thread, and file change notification Lua
+  library.
+
+Package: liblua5.2-cqueues
+Architecture: any
+Depends: openssl, liblua5.2-0
+Description: Event, socket, signal, thread, and file change notification Lua
+  library.
+

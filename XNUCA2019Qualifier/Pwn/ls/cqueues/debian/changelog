@@ -1,0 +1,376 @@
+liblua-cqueues (20171014) unstable; urgency=low
+
+  * Fix compilation with GCC 7
+  * Fix some compiler warnings
+  * Fix compilation with LuaJIT 2.1-beta3
+
+ -- Daurnimator <quae@daurnimator.com>  Fri, 14 Oct 2017 16:39:49 -0700
+
+liblua-cqueues (20161215-0) unstable; urgency=low
+
+  * Disallow :close when invoked from a thread resumed by cqueue_step.
+
+ -- William Ahern <william@25thandClement.com>  Thu, 15 Dec 2016 15:20:00 -0800
+
+liblua-cqueues (20161214-0) unstable; urgency=low
+
+  * Accept SSL instance in socket:starttls. (@daurnimator)
+  * Support cqueue:close. (@daurnimator)
+  * Correctly cancel any controller descriptors before destroying a
+    controller. (@daurnimator)
+  * Fix OpenSSL 1.1 support by correctly defaulting to client connect mode
+    in socket:starttls when neither accept nor connect mode is explicitly
+    specified.
+
+ -- William Ahern <william@25thandClement.com>  Wed, 14 Dec 2016 16:06:26 -0800
+
+liblua-cqueues (20161018-0) unstable; urgency=low
+
+  * Support OpenSSL 1.1 API. (@daurnimator)
+  * Support clock_gettime with macOS Sierra / XCode 8.0. (Reported by
+    @ziazon)
+  * Support accept4 and paccept for atomic O_CLOEXEC. (@daurnimator)
+  * Remove assert which aborted process when attempting to resume a dead
+    coroutine as it doesn't necessarily signal process corruption.
+    (@daurnimator)
+  * Enable IPv6 AAAA queries in socket.connect.
+  * Support passing Lua 5.3 integers as arguments to thread.start. (Reported
+    by and preliminary patch from @daurnimator)
+  * Basic SOCK_SEQPACKET support. (@daurnimator)
+
+ -- William Ahern <william@25thandClement.com>  Wed, 19 Oct 2016 01:38:03 -0700
+
+liblua-cqueues (20160812-0) unstable; urgency=low
+
+  * Support older Linux environments lacking signalfd by falling back
+    to sigtimedwait as we do for Solaris.
+  * On BSDs set FD_CLOEXEC on the signal.c kqueue descriptor.
+
+ -- William Ahern <william@25thandClement.com>  Fri, 12 Aug 2016 13:20:05 -0700
+
+liblua-cqueues (20160808-0) unstable; urgency=low
+
+  * Use userdata values (userdata environments in Lua 5.1) instead of relying
+    on ephemeron tables.
+  * Update dns.c with various bug fixes.
+  * Immediately put resolvers back into resolver pool. (@torhve)
+
+ -- William Ahern <william@25thandClement.com>  Mon, 08 Aug 2016 20:22:04 -0700
+
+liblua-cqueues (20160318-0) unstable; urgency=low
+
+  * Refactor build framework to make it easier to avoid automatic Lua
+    dependency checks. But also improve automatic Lua detection by
+    automatically selecting the Lua APIs to build against.
+  * Move most system feature detection to config.h from various source files.
+
+ -- William Ahern <william@25thandClement.com>  Fri, 18 Mar 2016 20:17:46 -0700
+
+liblua-cqueues (20160316-0) unstable; urgency=low
+
+  * Allow yielding through cqueues:step. (daurnimator)
+  * Use SSLv23_server_method instead of SSLv3_server_method when guessing
+    the TLS handshake mode--server or client--as many OpenSSL forks have
+    deprecated or removed SSLv3-specific APIs. (daurnimator)
+  * Support SO_BROADCAST. (daurnimator)
+  * Fix v6only flag. (daurnimator)
+
+ -- William Ahern <william@25thandClement.com>  Wed, 16 Mar 2016 18:34:51 -0700
+
+liblua-cqueues (20150907-0) unstable; urgency=low
+
+  * Fix bugs with getsockname and getpeername--AF_UNIX sockaddr length
+    can vary considerably based on system call and operating system. Report
+    and fixes from daurnimator. See PORTING.md for extended description of
+    varying behavior.
+  * Fix to socket.fdopen for regular files. Report and fix from daurnimator.
+  * Allow non-string error objects to be returned from cqueues:step, et al.
+    Fix from daurnimator.
+  * Set controller alert on cancellation to ensure any controller polling on
+    that controller wakes up. Report by daurnimator.
+  * Enhance accept to take an options argument. Fix from daurnimator.
+  * Fix wrong order of parameters to fcntl in socket.dup.
+  * Set errno when returning from BIO hooks as OpenSSL expects
+    unrecoverable, generic error values to be in errno. Report by
+    daurnimator.
+  * Fix stack offsets in config:getlookup and config:getsearch. Report and
+    fixes from tibboh.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 07 Sep 2015 19:30:21 -0700
+
+liblua-cqueues (20150727-0) unstable; urgency=low
+
+  * Fix bugs in cqueues.cancel. Report and fixes from daurnimator.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 27 Jul 2015 01:38:54 -0700
+
+liblua-cqueues (20150630-0) unstable; urgency=low
+
+  * Replace remaining uses of strerror with thread-safe cqs_strerror macro.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 30 Jun 2015 14:03:15 -0700
+
+liblua-cqueues (20150629-0) unstable; urgency=low
+
+  * Add autoflush support, enabled by default, which automatically flushes
+    the output buffer during reads and when initiating TLS.
+  * Add pushback support, enabled by default, which pushes data in the input
+    buffer back to the socket layer so it's read as part of the TLS
+    handshake.
+  * Ignore EOPNOTSUPP when trying to reset SO_REUSEPORT.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 30 Jun 2015 12:04:16 -0700
+
+liblua-cqueues (20150616-0) unstable; urgency=low
+
+  * Add support for POLLPRI.
+  * Fix Solaris Ports controller alerts.
+  * Add support for eventfd for controller alerts.
+  * Synchronize dns.c with upstream.
+  * Various bug fixes.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 16 Jun 2015 15:37:34 -0700
+
+liblua-cqueues (20150310-0) unstable; urgency=low
+
+  * :step, :loop, and :errors now return additional error information.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 10 Mar 2015 21:38:56 -0700
+
+liblua-cqueues (20150218-0) unstable; urgency=low
+
+  * Use newproxy to detect object leaks in Lua 5.1/LuaJIT because Lua 5.1
+    language doesn't support __gc metamethods on tables. (daurnimator)
+
+ -- William Ahern <william@25thandClement.com>  Wed, 18 Feb 2015 20:45:12 -0800
+
+liblua-cqueues (20150119-0) unstable; urgency=low
+
+  * Return EAFNOSUPPORT for unknown .sa_bind address family (sa_len == 0)
+    when copying the address.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 19 Jan 2015 15:33:43 -0800
+
+liblua-cqueues (20150113-0) unstable; urgency=low
+
+  * Optimize the way we put a controller in a ready state when signaling
+    a condition variable.
+  * Put a controller into a ready state when wrapping a function or
+    attaching a coroutine.
+  * Make compile with latest Lua 5.3 release candidate.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 13 Jan 2015 19:33:34 -0800
+
+liblua-cqueues (20150112-0) unstable; urgency=low
+
+  * Rename undocumented socket.fdopen to socket.dup, and add socket.fdopen
+    which takes ownership of the specified descriptor number.
+  * Use F_DUPFD_CLOEXEC in socket.dup if available.
+  * Use SOCK_CLOEXEC with socket(2) and socketpair(2) if available.
+  * Use MSG_CMSG_CLOEXEC with recvmsg(2) if available.
+  * Wrap .sa_bind option of low-level socket library.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 12 Jan 2015 15:03:41 -0800
+
+liblua-cqueues (20141021-0) unstable; urgency=low
+
+  * Add IPV6_V6ONLY support.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 21 Oct 2014 15:45:51 -0700
+
+liblua-cqueues (20141020-0) unstable; urgency=low
+
+  * Allow :events methods to return event set as integer bitset.
+  * Fix NULL-dereference when calling :connect method on a socket created
+    using socket.pair or socket.fdopen.
+  * Fix cqueues.poll when polling outside of a managed coroutine.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 20 Oct 2014 17:17:59 -0700
+
+liblua-cqueues (20140930-0) unstable; urgency=low
+
+  * Fix build dependency where M4 fails but the command line still creates
+    the target. On subsequent invocations make thinks the target is
+    satisfied.
+  * Handle numeric hosts differently so that socket.listen doesn't try
+    to build a resolver. On OS X when the network is not connected
+    /etc/resolv.conf doesn't exist, so building a resolver results in an
+    ENOENT error. This prevented listening on the loopback, 0.0.0.0, or ::1
+    when the network was disconnected.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 30 Sep 2014 17:56:31 -0700
+
+liblua-cqueues (20140923-0) unstable; urgency=low
+
+  * Add TLS Socket Name Indiciation (SNI) support.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 23 Sep 2014 16:08:59 -0700
+
+liblua-cqueues (20140916-0) unstable; urgency=low
+
+  * Fix out-of-bounds write when reading inotify events, reported by Timo Teräs.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 16 Sep 2014 15:18:16 -0700
+
+liblua-cqueues (20140729-0) unstable; urgency=low
+
+  * Fix compilation on NetBSD 5.1, which lacks constant NAN definition.
+  * Make promise.new function optional.
+  * Fix :recvfd to handle no descriptor in message.
+  * Document promise module.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 29 Jul 2014 21:08:15 -0700
+
+liblua-cqueues (20140707-0) unstable; urgency=low
+
+  * Add ability to pass functions as arguments to thread start routine.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 07 Jul 2014 18:37:23 -0700
+
+liblua-cqueues (20140702-0) unstable; urgency=low
+
+  * Pass on any additional arguments to cqueues:wrap when first resuming, so
+    user code doesn't have to create an expensive closure every time.
+  * Add promise module.
+  * Add auxlib module.
+  * Move cqueues.assert, cqueues.resume, and cqueues.wrap to auxlib.
+  * Add yieldable tostring to auxlib and use in promise __tostring metamethod.
+  * Add assert3, assert4, which calls error with a greater stack level.
+  * Add auxlib.fileresult to convert socket API return protocol to
+    Lua's file API return protocol.
+
+ -- William Ahern <william@25thandClement.com>  Wed, 02 Jul 2014 16:41:32 -0700
+
+liblua-cqueues (20140627-0) unstable; urgency=low
+
+  * Add maxerrs limit to catch unchecked error loops.
+  * Add :setmaxerrs method to change the limit from default of 100.
+
+ -- William Ahern <william@25thandClement.com>  Fri, 27 Jun 2014 15:08:41 -0700
+
+liblua-cqueues (20140616-0) unstable; urgency=low
+
+  * Add resolver pool factory.
+  * Add dns.random binding.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 16 Jun 2014 18:05:27 -0700
+
+liblua-cqueues (20140615-0) unstable; urgency=low
+
+  * Add automagic string-to-integer conversion of type, class, and section
+    parameters to packet:grep method.
+
+ -- William Ahern <william@25thandClement.com>  Sun, 15 Jun 2014 22:03:01 -0700
+
+liblua-cqueues (20140612-0) unstable; urgency=low
+
+  * Don't abort on assert when caller improperly calls dns_res_check after
+    already fetching answer with dns_res_fetch.
+
+ -- William Ahern <william@25thandClement.com>  Thu, 12 Jun 2014 21:53:39 -0700
+
+liblua-cqueues (20140607-0) unstable; urgency=low
+
+  * Add SO_REUSEPORT support.
+
+ -- William Ahern <william@25thandClement.com>  Sat, 07 Jun 2014 19:22:32 -0700
+
+liblua-cqueues (20140527-0) unstable; urgency=low
+
+  * Implement text mode semantics for block read operations.
+  * Add socket:read format for consuming multipart MIME data efficiently.
+  * Add socket.debug module with unit tests.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 27 May 2014 02:22:34 -0700
+
+liblua-cqueues (20140508-0) unstable; urgency=low
+
+  * Add timeout capability to buffered I/O.
+  * Add fast metatable checking to sockets code.
+  * Add .type routine to all modules.
+  * Make all pollable objects consistently implement all three of :pollfd,
+    :timeout, and :events.
+  * Allow :pollfd to return a condition variable.
+
+ -- William Ahern <william@25thandClement.com>  Wed, 08 May 2014 19:12:51 -0700
+
+liblua-cqueues (20140419-0) unstable; urgency=low
+
+  * Implement fast metatable checking in the controller code.
+
+ -- William Ahern <william@25thandClement.com>  Sat, 19 Apr 2014 22:56:19 -0700
+
+liblua-cqueues (20140331-0) unstable; urgency=low
+
+  * Remove invariant check in condition variable __gc routine because the
+    test was invalid when all objects are collected in a single cycle, as
+    they are when a script terminates.
+  * Add a chat server example.
+
+ -- William Ahern <william@25thandClement.com>  Fri, 31 Mar 2014 22:23:19 -0700
+
+liblua-cqueues (20140328-0) unstable; urgency=low
+
+  * Add :peereid and :peerpid socket methods.
+  * Fix endless loop bug when an AF_UNIX socket could not be bound.
+  * Add socket:listen wrapper.
+
+ -- William Ahern <william@25thandClement.com>  Fri, 28 Mar 2014 22:23:19 -0700
+
+liblua-cqueues (20140322-0) unstable; urgency=low
+
+  * Add condition variable API.
+  * Allow passing more primitives types to thread.start.
+  * Add Lua 5.3 support.
+
+ -- William Ahern <william@25thandClement.com>  Sat, 22 Mar 2014 20:23:56 -0800
+
+liblua-cqueues (20140130-0) unstable; urgency=low
+
+  * Install OpenSSL mutexes when loading thread module.
+
+ -- William Ahern <william@25thandClement.com>  Thu, 30 Jan 2014 16:22:56 -0800
+
+liblua-cqueues (20131209-0) unstable; urgency=low
+
+  * Fix slurp operation.
+  * Split openssl module into its own repository.
+
+ -- William Ahern <william@25thandClement.com>  Sun, 09 Dec 2013 19:21:57 -0800
+
+liblua-cqueues (20131205-1) unstable; urgency=low
+
+  * Obey SOCK_DGRAM sematics in input byte buffering code.
+  * Implement slurp operation.
+  * Add openssl.rand module.
+  * Add :setbufsiz and :setmaxline.
+
+ -- William Ahern <william@25thandClement.com>  Sun, 05 Dec 2013 17:30:58 -0800
+
+liblua-cqueues (20131023-0) unstable; urgency=low
+
+  * Fix bug which cleared O_NONBLOCK flag on thread descriptors.
+  * Fix thread entry function loading for Lua 5.1/LuaJIT.
+
+ -- William Ahern <william@25thandClement.com>  Wed, 23 Oct 2013 19:36:06 -0700
+
+liblua-cqueues (20130909-0) unstable; urgency=low
+
+  * Refactor build to be non-recursive.
+  * Integrate luapath script from external fork.
+  * Follow Debian naming conventions for multi-version Lua modules.
+  * Separate cqueues and openssl modules into two independent packages.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 09 Sep 2013 14:46:25 -0700
+
+lua-cqueues (20130129-0) unstable; urgency=low
+
+  * Bind interface for acquiring DNS resolver statistics.
+
+ -- William Ahern <william@25thandClement.com>  Tue, 29 Jan 2013 17:19:28 -0800
+
+lua-cqueues (20130106-0) unstable; urgency=low
+
+  * Initial debian build.
+
+ -- William Ahern <william@25thandClement.com>  Mon, 07 Jan 2013 05:00:48 -0000

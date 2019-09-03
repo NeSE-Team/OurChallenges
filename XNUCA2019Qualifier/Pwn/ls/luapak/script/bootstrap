@@ -1,0 +1,82 @@
+#!/bin/sh
+# vim: set ts=4:
+#
+# This script ensures that lua interpreter and lua modules specified
+# in Rocksfile are installed.
+#
+# Environment variables:
+#   LUA_VERSION : Version of the Lua interpreter (e.g. lua-5.3, luajit-2.0) to
+#                 be installed. Default is lua-5.3.
+#
+set -eu
+
+DEFAULT_LUA_VERSION='lua-5.3'
+HEREROCKS_URI='https://raw.githubusercontent.com/mpeterv/hererocks/0.16.0/hererocks.py'
+HEREROCKS_SHA256='8baac6389ebfb986493f897fafe447fec4a0ab0b69767af7c78824b9bfd69357'
+
+cd "$(dirname "$0")/.."
+. script/utils.sh
+
+configure_luarocks() {
+	local luaver; luaver=$(lua_version)
+
+	# LuaRocks expects gcc and make with prefix "mingw32-" under MinGW,
+	# but this is not how they are named in MSYS2/MinGW environment, so we must
+	# overwrite them.
+	# LuaRocks ships and uses bundled unix tools for Windows; the bundled wget
+	# doesn't work correctly for HTTPS, so we must use system-provided wget.
+	case "$HOST_OS" in
+		MINGW*) cat >> "$VENV_DIR"/luarocks/config-$luaver.lua <<-EOF
+					variables = variables or {}
+					variables.CC = "gcc"
+					variables.LD = "gcc"
+					variables.MAKE = "make"
+					variables.WGET = "wget"
+				EOF
+	esac
+
+	# XXX: LuaRocks requires this file to exist when installing itself from LuaRocks.
+	# https://github.com/luarocks/luarocks/pull/709
+	local site_config="$VENV_DIR/share/lua/$luaver/luarocks/site_config.lua"
+	if [ ! -f "$site_config" ]; then
+		mkdir -p "${site_config%/*}"
+		echo 'return {}' > "$site_config"
+	fi
+}
+
+install_rock() {
+	local name="$1"
+	local args="$name"
+
+	case "$name" in
+		*/*) args="--server=https://luarocks.org/manifests/${name%/*} ${name#*/}";;
+	esac
+
+	luarocks install $args
+}
+
+
+mkdir -p "$VENV_DIR" "$TEMP_DIR"
+
+if [ ! -e "$VENV_DIR"/bin/luarocks ] && [ ! -e "$VENV_DIR"/bin/luarocks.bat ]; then
+	version="$(printf %s "${LUA_VERSION:-$DEFAULT_LUA_VERSION}" | tr - =)"
+
+	einfo "Installing $version and luarocks into $VENV_DIR"
+
+	wgets "$HEREROCKS_URI" "$HEREROCKS_SHA256" "$TEMP_DIR"
+	python "$TEMP_DIR"/hererocks.py "$VENV_DIR" --no-readline --luarocks=^ --$version
+
+	. ./.envrc
+	configure_luarocks
+
+	printf '\n'
+else
+	. ./.envrc
+fi
+
+einfo 'Installing lua modules'
+cat Rocksfile | sed -En 's/^([^#]+).*/\1/p' | while read -r rockname; do
+	luarocks --mversion show "${rockname#*/}" >/dev/null 2>&1 \
+		|| install_rock "$rockname" \
+		|| die "Failed to install rock $rockname."
+done

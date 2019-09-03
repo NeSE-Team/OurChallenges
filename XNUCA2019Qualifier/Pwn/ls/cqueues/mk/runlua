@@ -1,0 +1,825 @@
+#!/bin/sh
+#
+# Copyright (C) 2015-2016 William Ahern
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+# ----------------------------------------------------------------------------
+# DESCRIPTION
+#
+# runlua is a POSIX shell script for locating and invoking specific Lua
+# interpreter versions. For example, the environment's Lua 5.1 interpreter
+# might be named lua, lua5.1, lua51, luajit, luajit2.0.2, etc. runlua
+# automates this difficult task in a safe, portable manner. runlua is
+# regularly tested on Linux, OS X, Solaris, AIX, FreeBSD, NetBSD, and
+# OpenBSD. And runlua safely handles all special characters encountered in
+# option arguments, directory and command paths, and shell variables.
+#
+# To execute a simple statement in either a Lua 5.2 or 5.3 interpreter:
+#
+#   runlua -r5.2-5.3 -e "print(_VERSION)"
+#
+# The command-line options to runlua are a superset of the standard Lua
+# interpreter. Run `runlua -h` for a description of each option.
+#
+# Shebang (#!) Execution
+#
+# In addition to explicit invocation, runlua supports two modes of shebang
+# execution:
+#
+#   #!/path/to/runlua -r5.2
+#   print"running Lua code!"
+#
+# and
+#
+#   #!/bin/sh
+#   _=[[
+#     echo "running shell code!"
+#     exec runlua -r5.2 "$0" "$@"
+#   ]]
+#   print "running Lua code!"
+#
+# Only Linux and OS X support the first mode. The second is portable in
+# practice--although POSIX does not require sh to be located at
+# /bin/sh, it nonetheless can be invoked from that location on all the
+# environments I've tested. And POSIX effectively requires shells to parse
+# and execute scripts command-by-command, so no shell should read past the
+# exec line.
+#
+# Also, the first mode requires a fully qualified path name, whereas with
+# the second mode the shell code in the header could locate runlua
+# dynamically. For example, a regression or example script in a project
+# repository might have a header like
+#
+#   #!/bin/sh
+#   _=[[
+#     PATH="${PATH}:$(dirname "$0")/../bin"
+#     exec "$(dirname "$0")/../contrib/runlua" "$0" "$@"
+#   ]]
+#   local mymodule = require"mymodule"
+#   -- ...
+#
+# which will work regardless of the current working directory when invoking
+# the script.
+# ----------------------------------------------------------------------------
+# PORTING NOTES
+#
+# unset) On NetBSD (confirmed up to 6.1.5) unset NAME will exit with a
+#   failure status if no such variable is set. If errexit (set -e) is
+#   enabled then the shell will exit. See NetBSD PR 49595.
+#
+# #!) Linux and OS X permit recursive shebang execution, which some users
+#   might wish to take advantage of. However, neither will field-split
+#   interpreter arguments, instead passing the remainder of the shebang line
+#   as a single positional argument. So we manually field-split any first
+#   argument.
+#
+#   Solaris (confirmed 11.1), AIX (confirmed 7.1), OpenBSD (confirmed 5.5),
+#   NetBSD (confirmed 5.1.2, 6.1.1), and FreeBSD (confirmed 9.0) will search
+#   for the interpreter recursively, following shebang interpreter paths
+#   until a binary interpreter is found. But they will not add each
+#   intervening interpreter path to the positional argument list. If you
+#   don't know the paths you cannot execute them recursively.
+#
+# $@) On some BSD shells (confirmed NetBSD 5.1.2, 6.1.1, OpenBSD 5.5)
+#   expansion of an empty $@ will wrongly trigger an error if nounset (set
+#   -u) is in effect.
+#
+# noclobber) On some BSD shells (confirmed NetBSD 5.1.2, 6.1.1) the
+#   noclobber (set -C) option will wrongly cause redirection to /dev/null
+#   using the redirect operator (">") to fail. Use the appending redirect
+#   operator (">>") as a workaround.
+#
+# trap EXIT) ksh88 (confirmed AIX 7.1) wrongly executes an EXIT trap when
+#   the calling function returns, rather than when the shell exits. Note
+#   ksh93 does not exhibit this bug.
+#
+# $@ and null IFS) ksh88 (confirmed AIX 7.1) pdksh (confirmed pdksh 5.2.14)
+#   and pdksh derivatives (confirmed OpenBSD 5.6 ksh, NetBSD 6.1 ksh) will
+#   expand $@ as a single field if IFS is null (set but empty). As a
+#   workaround we set IFS to a control character when juggling paths. ksh93,
+#   bash, and ash correctly expand $@ when IFS is null.
+#
+set -e # strict error
+set -u # don't expand unbound variable
+set -f # disable pathname expansion
+set -C # noclobber
+
+unset IFS
+"unalias" -a
+
+_LC_ALL="${LC_ALL+X}${LC_ALL-}"
+export LC_ALL=C
+
+: ${PATH:=$(command -p getconf PATH)}
+: ${TMPDIR:=/tmp}
+
+: ${RUNLUA_E:=}
+: ${RUNLUA_R:=1-}
+: ${RUNLUA_J:=0-}
+: ${RUNLUA_M:=6}
+: ${RUNLUA_S:=}
+: ${RUNLUA_T:=}
+: ${RUNLUA_D:=}
+: ${RUNLUA_P:=}
+
+MYVERSION=20160816
+MYVENDOR="william@25thandClement.com"
+
+TMPWD=
+
+warn() {
+	if [ "${RUNLUA_D#!}" -gt 0 -a -t 2 ]; then
+		printf "\033[0;31m%s: %.0s${1}\033[0m\n" "${0##*/}" "$@" >&2
+	else
+		printf "%s: %.0s${1}\n" "${0##*/}" "$@" >&2
+	fi
+}
+
+panic() {
+	warn "$@"
+	exit 1
+}
+
+debug() {
+	if [ "${RUNLUA_D#!}" -gt 0 ]; then
+		printf "%s: %.0s${1}\n" "${0##*/}" "$@" >&2
+	fi
+}
+
+dump() {
+	if [ "${RUNLUA_D#!}" -gt 1 ]; then
+		printf "%s: %.0s${1}\n" "${0##*/}" "$@" >&2
+	fi
+}
+
+# see porting note "$@ and null IFS"
+null_ifs() {
+	IFS=
+	set -- x y z
+	set -- "$@"
+	unset IFS
+	[ $# -gt 1 ] || printf "\2"
+}
+
+# glob PATTERN [MAXDEPTH] [EXEC-COMMAND] [INTERNAL:GLOB-COUNT]
+#
+# Recursive tree descending pathname generator combining features of glob(3)
+# and find(3).
+#
+glob() {
+        glob_N="${4:-0}"
+
+        IFS=
+        set +f
+        for glob_F in ${1}; do
+                [ -e "${glob_F}" ] || continue
+                if eval "${3:-printf '%s\\n'} \"\${glob_F}\""; then
+                        glob_N=$((${glob_N} + 1))
+                fi
+        done
+        set -f
+        unset IFS
+
+        if [ "${2-0}" -gt 0 ]; then
+                glob "${1%/*}/*/${1##*/}" "$((${2} - 1))" "${3:-}" "${glob_N}" || :
+        fi
+
+        [ "${glob_N}" -gt 0 ]
+}
+
+tempnam() {
+	printf "%s-%s\n" "${1}" "$(od -An -N8 -tx1 -v /dev/urandom 2>>/dev/null | tr -cd '0123456789abcdef')"
+}
+
+# chomp VARIABLE SUFFIX
+chomp() {
+	chomp_K="${1}"
+	chomp_C="${2}"
+
+	eval "chomp_V=\"\${${chomp_K}}\""
+	while [ "${chomp_V%${chomp_C}}" != "${chomp_V}" ]; do
+		chomp_V="${chomp_V%${chomp_C}}"
+	done
+	eval "${chomp_K}=\"\${chomp_V}\""
+}
+
+# istrue STRING
+istrue() {
+	case "${1#!}" in
+	[TtYy1]*)
+		return 0
+		;;
+	*)
+		return 1
+		;;
+	esac
+}
+
+# isinteger STRING
+isinteger() {
+	I="${1}"
+
+	[ "${#I}" -gt 0 ] || return 1
+
+	while [ "${#I}" -gt 0 ]; do
+		[ "${I##[0123456789]}" != "${I}" ] || return 1
+		I="${I##[0123456789]}"
+	done
+}
+
+# isdir PATH
+isdir() {
+	[ "${#1}" -gt 0 ] && [ -d "${1}" ]
+}
+
+# ver2num STRING [MAJOR] [MINOR] [PATCH]
+ver2num() {
+	M="${2:-0}"
+	m="${3:-0}"
+	p="${4:-0}"
+
+	IFS="."
+	set -- ${1}
+	unset IFS
+
+	if isinteger "${1:-}"; then
+		M=${1}
+	fi
+
+	if isinteger "${2:-}"; then
+		m=${2}
+	fi
+
+	if isinteger "${3:-}"; then
+		p=${3}
+	fi
+
+	printf "$((${M} * 10000 + ${m} * 100 + ${p}))\n"
+}
+
+num2ver() {
+	M=$((${1} / 10000 % 100))
+	m=$((${1} / 100 % 100))
+	p=$((${1} % 100))
+	printf "${M}.${m}.${p}\n"
+}
+
+api2num() {
+	n="$(ver2num "$@")"
+	printf "$((${n} / 100))\n"
+}
+
+num2api() {
+	printf "$((${1} / 100 % 100)).$((${1} % 100))\n"
+}
+
+getapi() {
+	if [ -x "${1}" ]; then
+		api2num "$(noenv; cdwd; "${1}" -e 'print(string.match(_VERSION, [[[%d.]+]]))' </dev/null 2>>/dev/null || true)"
+	fi
+}
+
+getrel() {
+	if [ -x "${1}" ]; then
+		ver2num "$(noenv; cdwd; "${1}" -v </dev/null 2>&1 | sed -ne 's/^Lua[^ ]* \([0-9][0-9\.]*\).*/\1/p' | head -n1)"
+	fi
+}
+
+trypth() {
+	trypth_LUA="${1}"
+	shift 1
+	for L; do
+		dump "testing LD_PRELOAD=\"%s\" %s" "${L}" "${trypth_LUA}"
+		# glibc's ld.so ignores LD_PRELOAD errors. It does emit a
+		# diagnostic to stderr, so we redirect stderr to stdout so
+		# that it corrupts our expected output.
+		#
+		# NB: musl's ld.so ignores LD_PRELOAD errors, but never
+		# issues a diagnostic. There's no way to distinguish success
+		# and failure.
+		TMP="$(noenv; cdwd; LD_PRELOAD="${L}" "${trypth_LUA}" -e 'print"OK"' </dev/null 2>&1 || true)"
+		[ "${TMP}" = "OK" ] && printf "%s\n" "${L}" && return 0
+		dump "unable to preload %s (expected 'OK', got '%s')" "${L}" "$(printf "%s" "${TMP}" | tr '\n' ' ')"
+	done
+
+	return 1
+}
+
+getpth() {
+	case "${getpth_UNAME:=$(uname -s)}" in
+	Linux)
+		# Linux/glibc supports loading libpthread through a DSO, but
+		# glibc has several bugs, including a race in libdl.
+		#
+		# Linux/musl unifies libpthread with libc. But it's a noop
+		# to preload libpthread.so.0 so we don't bother trying to
+		# distinguish musl.
+		set +f
+		trypth "${1}" "libpthread.so.0" /lib/*/libpthread.so* /lib/libpthread.so* && return 0
+		set -f
+		;;
+	FreeBSD|NetBSD|OpenBSD)
+		# Neither FreeBSD, NetBSD, nor OpenBSD support loading
+		# libpthread through a DSO. NetBSD requires a full path.
+		set +f
+		trypth "${1}" "libpthread.so" /usr/lib/libpthread.so* && return 0
+		set -f
+		;;
+	*BSD*)
+		# Assume other BSDs are similar and make a best effort.
+		set +f
+		trypth "${1}" "libpthread.so" /usr/lib/libpthread.so* && return 0
+		set -f
+
+		debug "skipping libpthread preloading (unknown operating system: %s)" "${getpth_UNAME}"
+		return 0
+		;;
+	Darwin)
+		# libpthread.dylib integrated with libSystem.dylib
+		return 0
+		;;
+	SunOS)
+		# libpthread integrated with libc since Solaris 10
+		getpth_V="$(ver2num "$(uname -v)")"
+		getpth_M="$(ver2num "10")"
+		[ ${getpth_V} -ge ${getpth_M} ] && return 0
+
+		trypth "${1}" "libpthread.so" && return 0
+		;;
+	oops)
+		# for regression testing
+		;;
+	*)
+		debug "skipping libpthread preloading (unknown operating system: %s)" "${getpth_UNAME}"
+		return 0
+		;;
+	esac
+
+	panic "unable to locate libpthread"
+}
+
+cdwd() {
+	if [ ${#TMPWD} -gt 0 ]; then
+		cd "${TMPWD}"
+	fi
+}
+
+mkwd() {
+	if [ -d "/dev" -a ! -w "/dev" ]; then
+		TMPWD="/dev"
+		debug "reusing /dev as non-writable working directory"
+	else
+		TMPWD="$(tempnam "${TMPDIR}/${0##*/}")"
+		debug "creating non-writable working directory %s" "${TMPWD}"
+		mkdir -m0500 "${TMPWD}"
+	fi
+}
+
+trap "rmwd" EXIT # see portability note "trap EXIT"
+
+rmwd() {
+	if [ ${#TMPWD} -gt 0 -a "${TMPWD}" != "/dev" -a -d "${TMPWD}" ]; then
+		debug "removing working directory %s" "${TMPWD}"
+		rmdir -- "${TMPWD}"
+		TMPWD=
+	fi
+}
+
+# set LUA_API and LUA_PRELOAD if LUA was specified from environment
+checklua() {
+	case "${LUA_API:-}" in
+	[0123456789].[0123456789])
+		;;
+	*)
+		# need absolute path
+		if [ "${LUA#*/}" = "${LUA}" ]; then
+			LUA="$(command -v "${LUA}" || panic "%s: cannot find path" "${LUA}")"
+			debug "using %s" "${LUA}"
+		fi
+		V="$(getapi "${LUA}")"
+		LUA_API="$(num2api ${V:-0})"
+		debug "%s API is %s" "${LUA}" "${LUA_API}"
+		;;
+	esac
+
+	if istrue "${RUNLUA_T}"; then
+		if ! istrue "${LUA_PRELOAD+true}"; then
+			LUA_PRELOAD="$(getpth "${LUA}")"
+			[ -z "${LUA_PRELOAD}" ] || debug "preloading %s" "${LUA_PRELOAD}"
+		fi
+	fi
+}
+
+findlua() {
+	if [ -n "${LUA:-}" ]; then
+		checklua
+		printf "%s\n" "${LUA}"
+		return 0
+	fi
+
+	mkwd
+
+	TMP="${RUNLUA_R#!}"
+	find_API_MIN="$(api2num "${TMP%%[,:-]*}" 1 0)"
+	find_API_MAX="$(api2num "${TMP##*[,:-]}" 99 99)"
+	TMP="${RUNLUA_R#!}"
+	find_REL_MIN="$(ver2num "${TMP%%[,:-]*}" 1 0 0)"
+	find_REL_MAX="$(ver2num "${TMP##*[,:-]}" 99 99 99)"
+	TMP="${RUNLUA_J#!}"
+	find_JIT_MIN="$(ver2num "${TMP%%[,:-]*}" 1 0 0)"
+	find_JIT_MAX="$(ver2num "${TMP##*[,:-]}" 99 99 99)"
+
+	found_PATH=
+	found_API=0
+	found_REL=0
+
+	# leverage shell pathname expansion to locate interpreter by
+	# iterating over $PATH directories and letting shell do the search
+	IFS=:
+	set -- ${PATH}
+	unset IFS
+
+	for D; do
+		# get abspath because getapi and getrel cd to working directory
+		D="$(! cd "${D}" 2>>/dev/null || pwd)"
+		[ ${#D} -gt 0 ] || continue
+
+		set -- "false" # see porting note "$@"
+
+		IFS="${NULL_IFS="$(null_ifs)"}"
+		set +f
+		if [ ! $find_JIT_MIN -gt 0 ]; then # PUC Lua
+			set -- "$@" ${D}/lu[a] ${D}/lua5* ${D}/lua-5*
+		fi
+		if [ $find_JIT_MAX -gt 0 ]; then # LuaJIT
+			set -- "$@" ${D}/luajit*
+		fi
+		set -f
+		unset IFS
+
+		for F; do
+			[ "${F}" != "false" ] || continue
+
+			dump "testing %s" "${F}"
+
+			# NB: match only a narrow range of basenames so we
+			# don't execute something like luatex or lua-tool
+			B="${F##*/}"
+
+			# strip pre-release suffix from basename (luajit-2.1.0-alpha)
+			B="${B%[._-]alpha*}"
+			B="${B%[._-]beta*}"
+			B="${B%[._-]dev*}"
+
+			# strip version suffix from basename (lua51,  luajit-2.0.3)
+			while [ "${B}" != "${B%%[0123456789._-]}" ]; do
+				B="${B%%[0123456789._-]}"
+			done
+
+			# skip if basename isn't "lua" or "luajit"
+			[ "${B}" = "lua" ] || [ "${B}" = "luajit" ] || continue
+
+			V="$(getapi "${F}")"
+			R="$(getrel "${F}")"
+			: ${V:=0}
+			: ${R:=0}
+
+			debug "%s is version %s (%s API)" "${F}" "$(num2ver "${R}")" "$(num2api "${V}")"
+
+			# does it meet our API range criteria?
+			[ ${V} -ge ${find_API_MIN} -a ${V} -le ${find_API_MAX} ] || continue
+
+			# does it meet our release range criteria?
+			if [ ${R} -lt ${find_REL_MIN} -o ${R} -gt ${find_REL_MAX} -o ${find_JIT_MIN} -gt 0 ]; then
+				# try luajit release range
+				[ "${B}" = "luajit" ] || continue
+				[ ${R} -ge ${find_JIT_MIN} ] || continue
+				[ ${R} -le ${find_JIT_MAX} ] || continue
+			fi
+
+			# is it a better fit than what we already found?
+			[ ${V} -gt 0 -a ${V} -ge ${found_API} -a ${R} -gt ${found_REL} ] || continue
+
+			# does it work if we preload libpthread?
+			if istrue "${RUNLUA_T}"; then
+				found_PTH="$(getpth "${F}")"
+			else
+				found_PTH=""
+			fi
+
+			found_PATH="${F}"
+			found_API=${V}
+			found_REL=${R}
+		done
+	done
+
+	rmwd
+
+	LUA="${found_PATH}"
+	LUA_API="$(num2api "${found_API}")"
+	LUA_PRELOAD="${found_PTH-}"
+
+	[ -n "${LUA}" ] || panic "unable to locate Lua interpreter"
+
+	debug "using %s" "${LUA}"
+	[ -n "${LUA_PRELOAD}" ] && debug "preloading %s" "${LUA_PRELOAD}"
+
+	printf "%s\n" "${LUA}"
+}
+
+# scan_api2key PREFIX VERSION
+scan_api2key() {
+	case "${2}" in
+	5.1)
+		printf "%s" "${1}"
+		;;
+	*)
+		printf "%s_%s" "${1}" "$(printf "%s" "${2}" | tr '.' '_')"
+		;;
+	esac
+}
+
+scan_addenv() {
+	[ "${#1}" -gt 0 ] || return 0
+
+	addenv_K="$(scan_api2key "${2}" "${3}")"
+	debug "adding %s to %s" "${1}" "${addenv_K}"
+
+	# NB: append left to right (see note in scan routine)
+	eval "addenv_V=\"\${${addenv_K}:-;;}\""
+	addenv_V="${1};${addenv_V#;}"
+	eval "export ${addenv_K}=\"\${addenv_V}\""
+}
+
+# callback from glob for paths matching */${LUA_API}
+scan__add() {
+	isdir "${1}" || return 0
+
+	# NB: test in subshell as our glob routine isn't reentrant
+	if (glob "${1}/*.lua" ${RUNLUA_M} ":"); then
+		scan_addenv "${1}/?.lua" LUA_PATH "${LUA_API}"
+	fi
+
+	if (glob "${1}/*.so" ${RUNLUA_M} ":"); then
+		scan_addenv "${1}/?.so" LUA_CPATH "${LUA_API}"
+	fi
+}
+
+scan() {
+	# NB: process from right to left and append left to right
+	while [ ${#RUNLUA_S} -gt 0 ]; do
+		scan_D="${RUNLUA_S##*;}"
+
+		if isdir "${scan_D}"; then
+			debug "scanning %s" "${scan_D}"
+			glob "${scan_D}/${LUA_API}" "${RUNLUA_M}" scan__add || :
+		fi
+
+		RUNLUA_S="${RUNLUA_S%${scan_D}}"
+		chomp RUNLUA_S ";"
+	done
+}
+
+noenv() {
+	for F in $(env | sed -ne 's/^\(LUA_C\{0,1\}PATH[_0123456789]*\).*$/\1/p' -e 's/^\(LUA_INIT[_0123456789]*\).*$/\1/p'); do
+		unset "$F" || true # see porting note "unset"
+	done
+}
+
+setopt() {
+	setopt_VAR="${1}"
+	setopt_NVAL="${2:-}"
+	eval "setopt_OVAL=\"\${${setopt_VAR}:-}\""
+
+	# don't set if value prefixed with "!"
+	[ "${setopt_OVAL}" = "${setopt_OVAL#!}" ] || return 0
+
+	eval "${setopt_VAR}=\"\${setopt_NVAL}\""
+}
+
+usage() {
+	cat <<-EOF
+	Usage: ${0##*/} [-e:il:vEr:j:Jms:tdpVh] [PATH [...]]
+	  -e STRING  execute statement
+	  -i         enter interactive mode after executing PATH
+	  -l STRING  require package
+	  -v         print interpreter version information
+	  -E         ignore environment variables
+	  -r RANGE   run specific Lua version
+	  -j RANGE   run specific LuaJIT version
+	  -J         exclude LuaJIT from candidate interpreters
+	  -m NUMBER  limit recursion to NUMBER
+	  -s PATH    scan directory tree for Lua modules
+	  -t         preload POSIX threading library
+	  -d         enable debug logging (twice for even more logging)
+	  -p         print path of Lua interpreter
+	  -V         print runlua version information
+	  -h         print this usage message
+
+	Examples:
+	  -r5.2.1    only run PUC Lua 5.2.1 interpreter
+	  -r5.1      run any Lua 5.1 interpreter, including LuaJIT
+	  -r5.2-5.3  run any Lua 5.2 or 5.3 interpreter
+	  -r5.2-     run any Lua 5.2 or later interpreter
+	  -j2.1      only run LuaJIT 2.1 interpreter
+
+	Environment:
+	  RUNLUA_E=BOOLEAN  same as -E if TRUE
+	  RUNLUA_R=RANGE    same as -r (use !RANGE to override -r)
+	  RUNLUA_J=RANGE    same as -j (use !RANGE to override -j or -J)
+	  RUNLUA_M=NUMBER   same as -m
+	  RUNLUA_T=BOOLEAN  same as -t if TRUE
+	  RUNLUA_D=NUMBER   set debug level (e.g. same -dd if 2)
+	  RUNLUA_P=BOOLEAN  same as -p if TRUE
+
+	Examples:
+	  RUNLUA_R=5.2 runlua           run any Lua 5.2 interpreter
+	  RUNLUA_R=5.3 runlua -r5.2     same as above (-r has higher precedence)
+	  RUNLUA_R='!5.3' runlua -r5.2  run any Lua 5.3 interpreter (! overrides -r)
+
+	BNF:
+	  <PATH>    ::= <STRING>
+	  <RANGE>   ::= <VERSION> | [VERSION] "-" [VERSION]
+	  <VERSION> ::= <NUMBER> ["." <NUMBER> ["." <NUMBER>]]
+	  <BOOLEAN> ::= <TRUE> | <FALSE>
+	  <TRUE>    ::= "yes" | "true" | "1"
+	  <FALSE>   ::= "no" | "false" | "0" | ""
+
+	Report bugs to <william@25thandClement.com>
+	EOF
+}
+
+version() {
+	cat <<-EOF
+	runlua  $MYVERSION
+	vendor  $MYVENDOR
+	release $MYVERSION
+	EOF
+}
+
+#
+# Field-split first argument. See porting note "#!".
+#
+# If we only have one argument than it's either a script path or we're not
+# running as a shebang interpreter. If we have zero then we don't want to
+# accidentally field-split the script path becaues it might contain spaces.
+#
+if [ $# -ge 2 ]; then
+	TMP="${1}"
+	shift 1
+	IFS=" "
+	set -- ${TMP} "$@"
+	unset IFS
+fi
+
+ARGC=0
+pusharg() {
+	eval "ARG${ARGC}=\"\${1}\""
+	ARGC=$((${ARGC} + 1))
+}
+
+while getopts "e:il:vEr:j:Js:tdpVh" OPTC; do
+	case "${OPTC}" in
+	e)
+		pusharg "-e"
+		pusharg "${OPTARG}"
+		;;
+	i)
+		pusharg "-i"
+		;;
+	l)
+		pusharg "-l"
+		pusharg "${OPTARG}"
+		;;
+	v)
+		pusharg "-v"
+		;;
+	E)
+		setopt RUNLUA_E yes
+		;;
+	r)
+		setopt RUNLUA_R "${OPTARG}"
+		;;
+	j)
+		setopt RUNLUA_J "${OPTARG}"
+		;;
+	J)
+		setopt RUNLUA_J "0-0"
+		;;
+	m)
+		setopt RUNLUA_M "${OPTARG}"
+		;;
+	s)
+		if [ "${RUNLUA_S}" = "${RUNLUA_S#!}" ]; then
+			MAIN_S="${MAIN_S-}${MAIN_S:+;}${OPTARG}"
+		fi
+		;;
+	t)
+		setopt RUNLUA_T yes
+		;;
+	d)
+		MAIN_D="$((${MAIN_D:-0} + 1))"
+		;;
+	p)
+		setopt RUNLUA_P yes
+		;;
+	V)
+		version
+		exit 0
+		;;
+	h)
+		usage
+		exit 0
+		;;
+	*)
+		usage >&2
+		exit 1
+		;;
+	esac
+done
+
+shift $((${OPTIND} - 1))
+
+#
+# Prepend our argument stack to the positional list.
+#
+if [ ${ARGC} -gt 0 ]; then
+	# first append to our positional list
+	I=0
+	while [ ${I} -lt ${ARGC} ]; do
+		eval "ARG=\"\${ARG${I}}\""
+
+		if [ $# -gt 0 ]; then
+			set -- "$@" "${ARG}"
+		else
+			set -- "${ARG}"
+		fi
+
+		I=$(($I + 1))
+	done
+
+	# then rotate left
+	I=0
+	N=$(($# - ${ARGC}))
+	while [ ${I} -lt ${N} ]; do
+		set -- "$@" "${1}"
+		shift 1
+
+		I=$(($I + 1))
+	done
+fi
+
+RUNLUA_M="${RUNLUA_M#!}"
+isinteger "${RUNLUA_M}" || panic "%s: not an integer" "${RUNLUA_M}"
+
+RUNLUA_S="${MAIN_S-}${MAIN_S:+;}${RUNLUA_S#!}"
+chomp RUNLUA_S ";"
+
+setopt RUNLUA_D "${MAIN_D:-0}"
+isinteger "${RUNLUA_D#!}" || panic "%s: not an integer" "${RUNLUA_D#!}"
+
+if istrue "${RUNLUA_E}"; then
+	noenv
+fi
+
+findlua >>/dev/null
+
+if istrue "${RUNLUA_P}"; then
+	printf "%s\n" "${LUA}"
+	exit 0
+fi
+
+scan
+
+if [ ${#_LC_ALL} -gt 0 ]; then
+	LC_ALL="${_LC_ALL#X}"
+else
+	unset LC_ALL
+fi
+
+if [ -n "${LUA_PRELOAD-}" ]; then
+	export LD_PRELOAD="${LD_PRELOAD-}${LD_PRELOAD:+:}${LUA_PRELOAD}"
+fi
+
+# see portability note "$@"
+if [ $# -gt 0 ]; then
+	exec "${LUA}" "$@"
+else
+	exec "${LUA}"
+fi

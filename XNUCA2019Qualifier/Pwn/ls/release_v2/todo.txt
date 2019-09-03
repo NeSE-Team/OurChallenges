@@ -1,0 +1,2 @@
+1. fix the issue of blocking connection
+2. debugging the exploits 
