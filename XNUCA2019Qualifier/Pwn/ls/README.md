@@ -1,12 +1,13 @@
-# xnuca2019_ls
+# xnuca2019_ls (lua server)
 This challenge implements a file server with lua-http.
 It is packed through luapak with lua 5.3.5.
 I have patched luapak at several places to make this challenge.
-## First Part reverse
+
+## First Part: reverse
 There is an oracle to leak some info about a 64-bit integer, the player is required to guess the secret within 255 interactions.
 The intended solution is binary search.
 
-# Second Part pwn
+## Second Part: pwn or sandbox?
 Lua intepreter is prone to memory corruption (crashes are shown in fuzzing folder) if we could execute arbitrary bytecode[1][2].
 The intended solution is the exploit technique used in [1] or [2].
 However, we saw sandbox escape exploits during the competition: 
