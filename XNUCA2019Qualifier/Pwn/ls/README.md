@@ -17,6 +17,10 @@ However, we saw sandbox escape exploits during the competition:
 
 # Refereces:
 [1] https://github.com/yough3rt/luasandbox
+
 [2] https://saelo.github.io/posts/pwning-lua-through-load.html
+
 [3] http://blog.leanote.com/post/xp0int/%5BPWN%5D-ls-cpt.shao%E3%80%81MF
+
 [4] https://the-ravi-programming-language.readthedocs.io/en/latest/lua_bytecode_reference.html
+
