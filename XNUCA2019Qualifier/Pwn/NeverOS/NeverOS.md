@@ -1,4 +1,4 @@
-# Never WP
+# NeverOS WP
 
 ### 漏洞点
 
@@ -49,8 +49,7 @@
    ```c
    copy_argv(vm, argc - 2, &argv[2]);
    ```
-
-   4. 然后内核初始化自己页表，调用init_pagetable函数:
+4. 然后内核初始化自己页表，调用init_pagetable函数:
 
 ```c
 /* Maps
