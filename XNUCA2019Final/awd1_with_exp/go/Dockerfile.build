@@ -1,0 +1,12 @@
+FROM golang:1.11.4 as builder
+
+COPY ./source /tmp/
+
+ENV GO111MODULE=on
+ENV GOPROXY=https://goproxy.io
+
+RUN cd /tmp/ \
+    && go build -ldflags "-s -w" server.go \
+    && mkdir /app 
+
+VOLUME /app

@@ -1,0 +1,30 @@
+version: "2.0"
+
+services:
+  go:
+    build: ./
+    links:
+      - redis
+    environment:
+      - SECRET_KEY=fsHjJV82e5oDBctNQ3wnk9CYmvFr7OSLpaMliWEh
+    ports:
+      - 80:8080
+
+    networks:
+      extnetwork:
+        ipv4_address: 172.16.0.2
+
+  redis:
+    build: ./redis
+    command: redis-server --requirepass redis123456aB
+    
+    networks:
+      extnetwork:
+        ipv4_address: 172.16.0.3
+        
+networks: 
+  extnetwork:
+    ipam:
+      config:
+      - subnet: 172.16.0.0/24
+        gateway: 172.16.0.1
